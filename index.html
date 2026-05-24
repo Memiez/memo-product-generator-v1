@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEMO Audio — Product Generator</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#16161E;--bg2:#0E0E16;--card:#1C1C27;--card2:#22222F;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#F5F5F8;--muted:#6A6A90;--muted2:#9090B0;
+  --accent:#B8203F;--accent2:#D42548;
+  --success:#2ECC71;--success-bg:rgba(46,204,113,0.1);--success-border:rgba(46,204,113,0.25);
+  --warn:#E67E22;--warn-bg:rgba(230,126,34,0.1);--warn-border:rgba(230,126,34,0.25);
+  --danger:#E74C3C;--danger-bg:rgba(231,76,60,0.1);--danger-border:rgba(231,76,60,0.25);
+  --gold:#C9A84C;
+  --radius:8px;--radius-lg:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+
+/* Layout */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.logo{font-size:12px;font-weight:700;letter-spacing:.15em;color:var(--accent);text-transform:uppercase}
+.logo-sep{color:var(--muted);font-size:12px}
+.logo-sub{font-size:12px;color:var(--muted)}
+.badge-api{margin-left:auto;font-size:11px;padding:3px 10px;border-radius:99px;background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+.badge-api.err{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-border)}
+main{display:flex;flex:1;overflow:hidden}
+
+/* Left panel */
+.left{width:300px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.panel-sec{padding:14px 16px;border-bottom:1px solid var(--border)}
+.form-group{margin-bottom:10px}
+.form-group:last-child{margin-bottom:0}
+label{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+input,select,textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select{background:var(--card);cursor:pointer}
+select option{background:var(--card)}
+textarea{resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{width:100%;padding:9px 14px;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--accent2)}
+.btn-export{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+.btn-export:hover{background:rgba(46,204,113,0.18)}
+
+/* Queue */
+.queue-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.queue-hdr{padding:10px 16px 6px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.queue-hdr label{margin:0}
+.q-count{font-size:11px;color:var(--muted)}
+.queue-list{flex:1;overflow-y:auto;padding:6px 8px}
+.queue-empty{padding:20px;text-align:center;color:var(--muted);font-size:12px}
+.q-item{display:flex;align-items:center;gap:8px;padding:8px 8px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:all .12s}
+.q-item:hover{background:var(--card);border-color:var(--border)}
+.q-item.active{background:rgba(184,32,63,.1);border-color:rgba(184,32,63,.25)}
+.q-info{flex:1;overflow:hidden}
+.q-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-meta{font-size:11px;color:var(--muted)}
+.q-rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;border-radius:4px}
+.q-rm:hover{color:var(--danger);background:var(--danger-bg)}
+.export-wrap{padding:12px;border-top:1px solid var(--border)}
+
+/* Right panel */
+.right{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+
+/* States */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;opacity:.5;min-height:400px}
+.empty-state i{font-size:42px;color:var(--muted)}
+.empty-title{font-size:14px;font-weight:500;text-align:center}
+.empty-sub{font-size:12px;color:var(--muted);text-align:center;line-height:1.8}
+.check-row{color:var(--success);font-size:12px}
+
+.loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;min-height:400px}
+.spinner{width:34px;height:34px;border:2.5px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.steps{display:flex;flex-direction:column;gap:7px;width:100%;max-width:260px}
+.step-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sdot.done{background:var(--success)}
+.sdot.active{background:var(--accent);animation:pulse 1s infinite}
+.sdot.wait{background:var(--border2)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.slabel.done{color:var(--muted)}
+.slabel.active{color:var(--text);font-weight:500}
+.slabel.wait{color:var(--muted);opacity:.4}
+
+/* Result */
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:14px}
+.result-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.r-name{font-size:15px;font-weight:600;margin-bottom:3px}
+.r-meta{font-size:11px;color:var(--muted)}
+.conf-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap}
+.conf-high{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+.conf-medium{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border)}
+.conf-low{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)}
+
+.warn-box{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--radius);padding:10px 12px}
+.warn-title{font-size:11px;font-weight:600;color:var(--danger);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.warn-item{font-size:12px;color:#ff9090;margin-top:2px}
+
+.src-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.src-label{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.src-chip{font-size:11px;padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--muted2);text-decoration:none;transition:all .12s}
+.src-chip:hover{border-color:var(--border2);color:var(--text);background:var(--card2)}
+
+.seo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seo-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px}
+.seo-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.seo-val{font-size:12px;color:var(--text)}
+.kw-val{color:var(--gold)}
+
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.spec-row{background:rgba(255,255,255,.03);border-radius:6px;padding:5px 9px;display:flex;gap:8px}
+.sk{font-size:11px;color:var(--muted);min-width:90px;flex-shrink:0}
+.sv{font-size:11px;color:var(--text);font-weight:500}
+
+.field-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
+.char-over{color:var(--warn)}
+
+.desc-tabs{display:flex;gap:3px;margin-bottom:6px}
+.dtab{padding:5px 11px;border-radius:var(--radius);border:1px solid transparent;font-size:12px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .12s}
+.dtab.active{border-color:var(--border2);background:var(--card2);color:var(--text)}
+.desc-preview{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-size:13px;line-height:1.75;max-height:240px;overflow:auto}
+.desc-preview h2{font-size:15px;font-weight:600;margin-bottom:8px}
+.desc-preview h3{font-size:13px;font-weight:600;margin:10px 0 5px}
+.desc-preview ul{padding-left:18px;margin:4px 0}
+.desc-preview li{margin-bottom:3px}
+.desc-preview p{margin-bottom:6px}
+.desc-html{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius);padding:12px;font-family:'Courier New',monospace;font-size:11px;color:#5fd65f;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.cat-hint{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.cat-hint span{color:var(--text)}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+.btn-approve{padding:8px 18px;background:var(--success-bg);color:var(--success);border:1px solid var(--success-border);border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .12s}
+.btn-approve:hover{background:rgba(46,204,113,.2)}
+.btn-regen{padding:8px 14px;background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border);border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn-skip{padding:8px 14px;background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border);border-radius:var(--radius);font-size:12px;cursor:pointer;font-family:inherit}
+
+.err-card{background:var(--danger-bg);border:1px solid var(--danger-border);border-radius:var(--radius-lg);padding:16px}
+.err-title{font-size:13px;font-weight:600;color:var(--danger);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.err-msg{font-size:12px;color:#ff9090;font-family:'Courier New',monospace;margin-bottom:12px;line-height:1.5;word-break:break-word}
+.btn-retry{padding:7px 16px;background:transparent;border:1px solid var(--danger-border);border-radius:var(--radius);color:var(--danger);font-size:12px;cursor:pointer;font-family:inherit}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo-dot"></div>
+  <span class="logo">MEMO Audio</span>
+  <span class="logo-sep">/</span>
+  <span class="logo-sub">AI Product Description Generator</span>
+  <span class="badge-api" id="api-status">● Ready</span>
+</header>
+
+<main>
+  <!-- Left Panel -->
+  <aside class="left">
+    <div class="panel-sec">
+      <div class="form-group">
+        <label>Product name *</label>
+        <input type="text" id="pname" placeholder="e.g. Focusrite Scarlett 2i2 4th Gen" />
+      </div>
+      <div class="form-group">
+        <label>Brand *</label>
+        <select id="pbrand">
+          <option>Focusrite</option><option>Universal Audio</option><option>ADAM Audio</option>
+          <option>AKG</option><option>Warm Audio</option><option>sE Electronics</option>
+          <option>IK Multimedia</option><option>KRK</option><option>Lewitt</option>
+          <option>Moog</option><option>Sequential</option><option>Novation</option>
+          <option>TASCAM</option><option>Apogee</option><option>EAW</option>
+          <option>HH Audio</option><option>Soundking</option><option>ICON</option>
+          <option>Numark</option><option>Denon DJ</option><option>Rane DJ</option>
+          <option>Alesis</option><option>V-MODA</option><option>Audioengine</option>
+          <option>Aune Audio</option><option>Kanto</option><option>Hosa Technology</option>
+          <option>UDG Gear</option><option>Optimal Audio</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group row2">
+        <div>
+          <label>SKU</label>
+          <input type="text" id="psku" placeholder="RE-00756" />
+        </div>
+        <div>
+          <label>SRP (฿)</label>
+          <input type="number" id="psrp" placeholder="8790" />
+        </div>
+      </div>
+      <button class="btn btn-primary" id="gen-btn" onclick="startGenerate()">
+        <i class="ti ti-bolt"></i> Generate description
+      </button>
+    </div>
+
+    <div class="queue-wrap">
+      <div class="queue-hdr">
+        <label>Approved queue</label>
+        <span class="q-count" id="q-count">0 items</span>
+      </div>
+      <div class="queue-list" id="queue-list">
+        <div class="queue-empty">ยังไม่มีสินค้า<br>กด Approve เพื่อเพิ่ม</div>
+      </div>
+    </div>
+
+    <div class="export-wrap" id="export-wrap" style="display:none">
+      <button class="btn btn-export" onclick="exportCSV()">
+        <i class="ti ti-download"></i> Export WooCommerce CSV
+      </button>
+    </div>
+  </aside>
+
+  <!-- Right Panel -->
+  <section class="right" id="right">
+
+    <div class="empty-state" id="empty-state">
+      <i class="ti ti-adjustments-alt"></i>
+      <div class="empty-title">MEMO Audio Product Generator</div>
+      <div class="empty-sub">
+        ใส่ชื่อสินค้าและกด Generate<br>
+        AI จะ Search Official Website แล้วสร้าง Thai SEO Description
+      </div>
+      <div style="text-align:left;line-height:2">
+        <div class="check-row"><i class="ti ti-check" style="font-size:13px"></i> Search จาก Official Brand Website</div>
+        <div class="check-row"><i class="ti ti-check" style="font-size:13px"></i> Cross-verify Sweetwater / B&H</div>
+        <div class="check-row"><i class="ti ti-check" style="font-size:13px"></i> Thai SEO Description + WooCommerce HTML</div>
+        <div class="check-row"><i class="ti ti-check" style="font-size:13px"></i> Export CSV พร้อม Import ทันที</div>
+      </div>
+    </div>
+
+    <div class="loading-state" id="loading-state" style="display:none">
+      <div class="spinner"></div>
+      <div class="steps" id="steps"></div>
+      <div style="font-size:11px;color:var(--muted)">กำลังค้นหาข้อมูลจาก Official Sources...</div>
+    </div>
+
+    <div id="result-area" style="display:none"></div>
+    <div id="error-area" style="display:none"></div>
+
+  </section>
+</main>
+
+</div>
+
+<script>
+const STEPS = [
+  'Search official website',
+  'Cross-verify specs',
+  'Generate Thai description',
+  'SEO optimization'
+];
+
+let approved = [];
+let currentMeta = {};
+let activeStep = 0;
+let stepTimer;
+
+function setStep(n) {
+  activeStep = n;
+  document.getElementById('steps').innerHTML = STEPS.map((s,i) => {
+    const st = i < n ? 'done' : i === n ? 'active' : 'wait';
+    return `<div class="step-row">
+      <div class="sdot ${st}"></div>
+      <span class="slabel ${st}">${s}</span>
+      ${i < n ? '<i class="ti ti-check" style="font-size:12px;color:var(--success);margin-left:auto"></i>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function showState(s) {
+  document.getElementById('empty-state').style.display = s==='empty' ? 'flex' : 'none';
+  document.getElementById('loading-state').style.display = s==='loading' ? 'flex' : 'none';
+  document.getElementById('result-area').style.display = s==='result' ? 'block' : 'none';
+  document.getElementById('error-area').style.display = s==='error' ? 'block' : 'none';
+}
+
+async function startGenerate() {
+  const name = document.getElementById('pname').value.trim();
+  const brand = document.getElementById('pbrand').value;
+  const sku = document.getElementById('psku').value.trim();
+  const srp = document.getElementById('psrp').value.trim();
+  if (!name) { document.getElementById('pname').focus(); return; }
+
+  currentMeta = { name, brand, sku, srp };
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2"></i> Generating...';
+
+  clearInterval(stepTimer);
+  showState('loading');
+  setStep(0);
+  stepTimer = setInterval(() => { if (activeStep < 3) setStep(activeStep + 1); }, 4000);
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productName: name, brand, sku, srp })
+    });
+
+    clearInterval(stepTimer);
+    setStep(4);
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!data.result) throw new Error('ไม่ได้รับผลลัพธ์จาก Server');
+
+    setTimeout(() => showResult(data.result), 300);
+
+  } catch (err) {
+    clearInterval(stepTimer);
+    showError(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-bolt"></i> Generate description';
+  }
+}
+
+function showResult(r) {
+  showState('result');
+
+  const confCls = r.confidence === 'high' ? 'conf-high' : r.confidence === 'medium' ? 'conf-medium' : 'conf-low';
+  const confIcon = r.confidence === 'high' ? 'ti-circle-check' : r.confidence === 'medium' ? 'ti-alert-triangle' : 'ti-alert-circle';
+
+  const warnHtml = r.warnings?.length ? `
+    <div class="warn-box">
+      <div class="warn-title"><i class="ti ti-alert-triangle"></i> ต้องตรวจสอบก่อน Import</div>
+      ${r.warnings.map(w => `<div class="warn-item">· ${w}</div>`).join('')}
+    </div>` : '';
+
+  const srcHtml = r.sources?.length ? `
+    <div class="src-row">
+      <span class="src-label">Sources:</span>
+      ${r.sources.map(s => {
+        let h; try { h = new URL(s).hostname.replace('www.',''); } catch { h = s.slice(0,30); }
+        return `<a class="src-chip" href="${s}" target="_blank" rel="noreferrer">${h}</a>`;
+      }).join('')}
+    </div>` : '';
+
+  const specsHtml = r.key_specs && Object.keys(r.key_specs).length ? `
+    <div>
+      <div class="field-label">Verified specs</div>
+      <div class="spec-grid">
+        ${Object.entries(r.key_specs).map(([k,v]) => `
+          <div class="spec-row"><span class="sk">${k}</span><span class="sv">${v}</span></div>
+        `).join('')}
+      </div>
+    </div>` : '';
+
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-card">
+
+      <div class="result-head">
+        <div>
+          <div class="r-name">${esc(r.product_name_th || currentMeta.name)}</div>
+          <div class="r-meta">${esc(currentMeta.brand)}${currentMeta.sku ? ' · ' + esc(currentMeta.sku) : ''}${currentMeta.srp ? ' · ฿' + Number(currentMeta.srp).toLocaleString() : ''}</div>
+        </div>
+        <span class="conf-badge ${confCls}">
+          <i class="ti ${confIcon}" style="font-size:12px"></i>
+          ${(r.confidence || '?').toUpperCase()}
+        </span>
+      </div>
+
+      ${warnHtml}
+      ${srcHtml}
+
+      <div class="seo-grid">
+        ${r.meta_title ? `<div class="seo-card"><div class="seo-label">Meta title</div><div class="seo-val">${esc(r.meta_title)}</div></div>` : ''}
+        ${r.focus_keyword ? `<div class="seo-card"><div class="seo-label">Focus keyword</div><div class="seo-val kw-val">${esc(r.focus_keyword)}</div></div>` : ''}
+      </div>
+
+      <div>
+        <div class="field-label">Short description (WooCommerce excerpt)</div>
+        <textarea id="edit-short" rows="3" oninput="updateChar()">${esc(r.short_desc_th || '')}</textarea>
+        <div class="char-count" id="char-count"></div>
+      </div>
+
+      ${specsHtml}
+
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div class="field-label" style="margin:0">Description</div>
+          <div class="desc-tabs">
+            <button class="dtab active" id="tab-preview" onclick="switchTab('preview')">Preview</button>
+            <button class="dtab" id="tab-html" onclick="switchTab('html')">HTML</button>
+            <button class="dtab" id="tab-edit" onclick="switchTab('edit')">Edit</button>
+          </div>
+        </div>
+        <div id="desc-preview" class="desc-preview">${r.desc_th || ''}</div>
+        <pre id="desc-html" class="desc-html" style="display:none">${esc(r.desc_th || '')}</pre>
+        <textarea id="desc-edit" rows="10" style="display:none;font-family:monospace;font-size:11px;color:#5fd65f">${esc(r.desc_th || '')}</textarea>
+      </div>
+
+      ${r.category_suggestion ? `<div class="cat-hint"><i class="ti ti-folder" style="font-size:13px"></i> Category: <span>${esc(r.category_suggestion)}</span></div>` : ''}
+
+      <div class="actions">
+        <button class="btn-approve" onclick="approveItem()">
+          <i class="ti ti-check"></i> Approve & add to queue
+        </button>
+        <button class="btn-regen" onclick="startGenerate()">
+          <i class="ti ti-refresh"></i> Regenerate
+        </button>
+        <button class="btn-skip" onclick="skipItem()">Skip</button>
+      </div>
+    </div>`;
+
+  updateChar();
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateChar() {
+  const ta = document.getElementById('edit-short');
+  const cc = document.getElementById('char-count');
+  if (!ta || !cc) return;
+  const n = ta.value.length;
+  cc.textContent = n + ' chars' + (n > 200 ? ' · ยาวเกินไป' : '');
+  cc.className = 'char-count' + (n > 200 ? ' char-over' : '');
+}
+
+function switchTab(t) {
+  const editVal = document.getElementById('desc-edit')?.value || '';
+  const preview = document.getElementById('desc-preview');
+  const html = document.getElementById('desc-html');
+  const edit = document.getElementById('desc-edit');
+  preview.style.display = t === 'preview' ? 'block' : 'none';
+  html.style.display = t === 'html' ? 'block' : 'none';
+  edit.style.display = t === 'edit' ? 'block' : 'none';
+  if (t === 'html') html.textContent = editVal;
+  if (t === 'preview') preview.innerHTML = editVal;
+  ['preview','html','edit'].forEach(id => {
+    const btn = document.getElementById('tab-' + id);
+    if (btn) btn.className = 'dtab' + (id === t ? ' active' : '');
+  });
+}
+
+function approveItem() {
+  const short = document.getElementById('edit-short')?.value || '';
+  const descEdit = document.getElementById('desc-edit');
+  const descPreview = document.getElementById('desc-preview');
+  const desc = descEdit?.style.display !== 'none' ? descEdit.value : descPreview?.innerHTML || '';
+  const cat = document.querySelector('.cat-hint span')?.textContent || currentMeta.brand;
+  const kw = document.querySelector('.kw-val')?.textContent || '';
+
+  approved.push({ ...currentMeta, short_desc: short, desc_html: desc, cat, kw });
+  updateQueue();
+  showState('empty');
+  document.getElementById('pname').value = '';
+  document.getElementById('psku').value = '';
+  document.getElementById('psrp').value = '';
+}
+
+function skipItem() { showState('empty'); }
+
+function updateQueue() {
+  const list = document.getElementById('queue-list');
+  const count = document.getElementById('q-count');
+  const exportWrap = document.getElementById('export-wrap');
+
+  count.textContent = approved.length + ' item' + (approved.length !== 1 ? 's' : '');
+  exportWrap.style.display = approved.length > 0 ? 'block' : 'none';
+
+  if (!approved.length) {
+    list.innerHTML = '<div class="queue-empty">ยังไม่มีสินค้า<br>กด Approve เพื่อเพิ่ม</div>';
+    return;
+  }
+  list.innerHTML = approved.map((p, i) => `
+    <div class="q-item" onclick="previewApproved(${i})">
+      <div class="q-info">
+        <div class="q-name">${esc(p.name)}</div>
+        <div class="q-meta">${esc(p.brand)}${p.sku ? ' · ' + esc(p.sku) : ''}</div>
+      </div>
+      <button class="q-rm" onclick="event.stopPropagation();removeItem(${i})" title="Remove">×</button>
+    </div>`).join('');
+}
+
+function removeItem(i) { approved.splice(i, 1); updateQueue(); }
+
+function previewApproved(i) {
+  const p = approved[i];
+  showState('result');
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-card">
+      <div class="result-head">
+        <div>
+          <div class="r-name">${esc(p.name)}</div>
+          <div class="r-meta">${esc(p.brand)}${p.sku?' · '+esc(p.sku):''}${p.srp?' · ฿'+Number(p.srp).toLocaleString():''}</div>
+        </div>
+        <span class="conf-badge conf-high"><i class="ti ti-circle-check" style="font-size:12px"></i> APPROVED</span>
+      </div>
+      <div><div class="field-label">Short description</div><div style="font-size:13px;line-height:1.6;color:var(--text)">${esc(p.short_desc)}</div></div>
+      <div><div class="field-label">Description preview</div><div class="desc-preview">${p.desc_html}</div></div>
+      <div class="actions">
+        <button class="btn-skip" onclick="showState('empty')">← กลับ</button>
+        <button class="btn-regen" onclick="removeItem(${i});showState('empty')">
+          <i class="ti ti-trash"></i> Remove from queue
+        </button>
+      </div>
+    </div>`;
+}
+
+function showError(msg) {
+  showState('error');
+  document.getElementById('error-area').innerHTML = `
+    <div class="err-card">
+      <div class="err-title"><i class="ti ti-alert-circle"></i> เกิดข้อผิดพลาด</div>
+      <div class="err-msg">${esc(msg)}</div>
+      <button class="btn-retry" onclick="startGenerate()">
+        <i class="ti ti-refresh"></i> ลองใหม่
+      </button>
+    </div>`;
+}
+
+function exportCSV() {
+  if (!approved.length) return;
+  const F = ['ID','Type','SKU','Name','Published','Is featured?','Visibility in catalog',
+    'Short description','Description','Tax status','Tax class',
+    'In stock?','Stock','Backorders allowed?','Sold individually?',
+    'Regular price','Sale price','Categories','Tags','Shipping class','Images','Position'];
+  const q = v => '"' + String(v||'').replace(/"/g,'""') + '"';
+  const rows = [F.map(q).join(',')];
+  approved.forEach((p,i) => rows.push([
+    '','simple',p.sku,p.name,1,0,'visible',
+    p.short_desc, p.desc_html,
+    'taxable','',1,'',0,0,
+    p.srp||'','',
+    p.cat||p.brand,
+    [p.brand,p.kw].filter(Boolean).join(', '),
+    '','',i
+  ].map(q).join(',')));
+  const blob = new Blob(['\uFEFF'+rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`MEMO_WooCommerce_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+document.getElementById('pname').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startGenerate();
+});
+</script>
+</body>
+</html>
