@@ -33,7 +33,7 @@ async function callAnthropic(apiKey, messages) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1500,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       system: SYS,
@@ -47,13 +47,10 @@ async function callAnthropic(apiKey, messages) {
   return res.json();
 }
 
-// Vercel Serverless Function — named export "default"
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -69,7 +66,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'productName and brand are required' });
   }
 
-  const brandSite = BRAND_SITES[brand] || `${brand.toLowerCase().replace(/\s+/g, '')}.com`;
+  const brandSite = BRAND_SITES[brand] || `${brand.toLowerCase().replace(/\s+/g,'')}.com`;
   const prompt = [
     `Generate accurate Thai WooCommerce product description for:`,
     `Product: ${productName}`,
